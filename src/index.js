@@ -1,3 +1,4 @@
+import {traceRelationships} from './relationship-engine.js';
 import {contextualize as contextualizeCase} from './context-interpreter.js';
 import {reconstruct as reconstructCase} from './case-engine.js';
 import {extractCandidates,findMissingRequirements,checkLegalSources,runModelExperiment,ALLOWED_MODELS} from './research-lab.js';
@@ -320,6 +321,7 @@ async function handleApi(request,env){
   try {obj=JSON.parse(raw)}catch {return responseJson({error:'Invalid JSON'},400)}
   try {
     if(!isRecord(obj))fail('Invalid request body');
+    if(pathname==='/api/case/relationships'){const reconstructed=reconstructCase(obj);const context=contextualizeCase(reconstructed,obj.annotations||[]);return responseJson({reconstructed,context,graph:traceRelationships(reconstructed,context,obj.graph||{})});}
     if(pathname==='/api/case/context'){const reconstructed=reconstructCase(obj);return responseJson({reconstructed,context:contextualizeCase(reconstructed,obj.annotations||[])});}
     if(pathname==='/api/case/reconstruct')return responseJson(reconstructCase(obj));
     if(pathname==='/api/lab/extract')return responseJson(extractCandidates(obj));
