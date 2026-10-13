@@ -1,0 +1,28 @@
+# Keep experimental reference labels and answer keys private.
+output/private_key.jsonl
+output/*_key*.jsonl
+output/*_answers.jsonl
+output/*.json
+output/*.jsonl
+
+# Local reports / generated runs
+output/
+
+# Python artifacts and environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
