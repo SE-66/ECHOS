@@ -1,3 +1,4 @@
+import {evaluateAlternatives} from './alternative-engine.js';
 import {traceRelationships} from './relationship-engine.js';
 import {contextualize as contextualizeCase} from './context-interpreter.js';
 import {reconstruct as reconstructCase} from './case-engine.js';
