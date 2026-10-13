@@ -26,3 +26,8 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Cloudflare and node artifacts
+node_modules/
+.wrangler/
+.dev.vars*

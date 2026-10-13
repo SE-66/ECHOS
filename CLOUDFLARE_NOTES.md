@@ -1,12 +1,55 @@
-# Cloudflare deployment: next stage, not configured yet
+# Cloudflare deployment for ECHOS
 
-This repository contains a Python 3.10+ localhost prototype based on `http.server.ThreadingHTTPServer` and the Python standard library. It is **not** yet compatible with Cloudflare Pages or Cloudflare Workers as a drop-in deployment. Running `python web_demo.py` binds to 127.0.0.1 and is designed only for local exploration.
+ECHOS now includes a **Cloudflare Workers** adapter in `src/index.js`, the browser UI in `public/index.html`, and Wrangler configuration in `wrangler.jsonc`. The Python research prototype remains available locally and is not executed by Cloudflare.
 
-Before public deployment:
-1. Decide on the Cloudflare architecture: port the deterministic engine to a TypeScript Worker with server-side independent scoring, or use an appropriate container-based hosting option for the Python server. Do not assume a standard Python HTTP server runs unchanged on Workers.
-2. Keep the reference oracle and private grading keys on the server; never expose the private test labels to candidate models or browser clients. The current `/api/evaluate` intentionally displays reference calculations for **demonstration**, not blind evaluations.
-3. Implement authentication, authorization, request quotas, input-size limits, audit logs, abuse controls and privacy safeguards before accepting private financial documents.
-4. Add deployment configuration and CI only after the hosting choice and integration tests are complete.
-5. Validate results on independently reviewed financial scenarios before positioning the service as commercial AI assurance.
+## Existing Cloudflare Git deployment
 
-No Cloudflare deployment has been performed by this initial GitHub repository setup.
+The Cloudflare Git deployment command can remain:
+
+```bash
+npx wrangler deploy
+```
+
+Keep the **root directory** as the repository root, not `public/`, and avoid setting a Pages-specific static output directory. Wrangler reads `wrangler.jsonc`, compiles `src/index.js`, and publishes `public/index.html` as an asset. No build command is required. `npm install` may be run by the platform if package.json is detected.
+
+If configuring the deployment afresh, select a **Cloudflare Workers** project, connect the GitHub repository `SE-66/ECHOS`, use branch `main`, and run `npx wrangler deploy` from the root.
+
+## Local Cloudflare preview
+
+```bash
+npm install
+npm run dev
+```
+
+Check `http://localhost:8787/` and `http://localhost:8787/api/health`.
+
+## Regression tests
+
+```bash
+npm run test:worker
+python -m unittest discover -s tests -v
+```
+
+The Cloudflare adapter was checked against all 44 Python scenario oracle cases locally: action and response-category classifications agree, with only a nonsemantic numeric-display difference at one zero boundary (`0` versus `0.00`). Python and JS use distinct hashing serialization; certificate hashes across runtimes are not meant to be interchangeable.
+
+## Public-demo safety and scope
+
+- The Cloudflare app implements the **four synthetic financial domains** only; it does not call an external LLM, process real business data, or authenticate users.
+- The front-end `/api/evaluate` intentionally displays reference answers. It is **not** a confidential blind-test API. Do not transmit private answer keys or experimental cases there.
+- The Worker performs deterministic decision-rule validation and score calculation server-side. The Python reference remains the research source of truth; test additional cases before extending the JS port.
+- Do not use for investment or corporate financial execution. Do not ingest confidential documents until authentication, rate limiting, contracts and data safeguards are implemented.
+- **Repository is public.** Public disclosure may affect patent options. Contact qualified IP counsel before disclosing new technical inventions.
+
+## Cloudflare settings summary
+
+| Setting | Value |
+|---|---|
+| Deployment command | `npx wrangler deploy` |
+| Root directory | Repository root |
+| Wrangler config | `wrangler.jsonc` |
+| Worker entry | `src/index.js` |
+| Static assets | `public/` |
+| Worker-first routes | `/api/*` |
+| Health endpoint | `/api/health` |
+
+Cloudflare documentation: https://developers.cloudflare.com/workers/wrangler/configuration/ and https://developers.cloudflare.com/workers/static-assets/

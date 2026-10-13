@@ -4,9 +4,28 @@
 
 A runnable, dependency-free Python application for building and independently evaluating financial decision transitions. It implements the research distinction between change detection, financial relevance, evidence adequacy, justified decision adaptation, and appropriate stability.
 
-> **Repository status:** Local research prototype only. No Cloudflare deployment yet. See [CLOUDFLARE_NOTES.md](CLOUDFLARE_NOTES.md). This repository is public; publishing source can affect future patent options. No open-source license has been granted.
+> **Repository status:** Local Python research prototype + deployable Cloudflare Workers demonstration. See [CLOUDFLARE_NOTES.md](CLOUDFLARE_NOTES.md). This repository is public; publishing source can affect future patent options. No open-source license has been granted.
 
-## Run the app
+## Deploy on Cloudflare Workers
+
+The repository now includes `wrangler.jsonc`, a JavaScript Worker (`src/index.js`) that ports the four deterministic research models, and static browser assets (`public/index.html`). Existing Cloudflare Git deployments can use **`npx wrangler deploy`** from the **repository root**. See [Cloudflare deployment instructions](CLOUDFLARE_NOTES.md).
+
+To preview locally with Wrangler:
+
+```bash
+npm install
+npm run dev
+```
+
+To run Cloudflare Worker tests:
+
+```bash
+npm run test:worker
+```
+
+The Worker and Python versions are separate implementations. Python remains the reference research engine, and the public Cloudflare UI is **not** a secure blind test.
+
+## Run the Python app
 
 Requires **Python 3.10+**. No external packages, paid APIs or training needed.
 
@@ -23,7 +42,7 @@ Open **http://127.0.0.1:8765** in a browser. The interactive local app lets you:
 3. View independently calculated expected actions, constraint slack, provenance certificates, and the effect of the change.
 4. Paste an AI's JSON answer and compare it with the rule oracle. The oracle is recalculated server-side.
 
-This app uses **synthetic example rules**. It does not connect to live company data, AI APIs, bank accounts, ERP software, or the internet. It makes no irreversible or financial transactions. Localhost only.
+This app uses **synthetic example rules**. It does not connect to live company data, AI APIs, bank accounts, ERP software, or the internet. It makes no irreversible or financial transactions. The Python app binds to localhost, while a separate JavaScript implementation is available for Cloudflare.
 
 ## Run regression tests
 
@@ -78,7 +97,12 @@ Read **ALGORITHM_SPEC.md** for the architecture, formal definition, research lin
 ```
 ECHOS/
 ├── echo_trace.py                 # Engine, deterministic oracle, generator, scorer, CLI
-├── web_demo.py                   # Local 1-page browser app and rule-server
+├── web_demo.py                   # Local Python 1-page browser app and rule-server
+├── wrangler.jsonc               # Cloudflare Workers deploy configuration
+├── package.json                 # Wrangler developer command
+├── src/index.js                 # Cloudflare Worker rule and scoring API
+├── public/index.html            # Cloudflare browser UI
+├── cloudflare-tests/worker.test.js # Cloudflare adapter tests
 ├── ALGORITHM_SPEC.md             # Research/engineering design and novelty hypotheses
 ├── README.md                     # This file
 ├── CLOUDFLARE_NOTES.md          # Future deployment plan and security requirements

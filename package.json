@@ -1,0 +1,15 @@
+{
+  "name": "echos-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Cloudflare Workers adapter for the ECHO-TRACE research demonstration",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test:worker": "node --test cloudflare-tests/*.test.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
+}
