@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {contextualize} from '../src/context-interpreter.js';
+const example=()=>({case_id:'supplier',as_of:'2026-10-13',sources:[{id:'contract'},{id:'email'}],claims:[{id:'old',key:'payment_days',value:'60000000'}, {id:'new',key:'payment_days',value:'30000000'}]});
+const annotated=[{claim_id:'old',modality:'existing',actor:'supplier',entity:'Supplier A',scenario:'base',force:'binding_claim',authority_source_id:'contract',reviewed:true},{claim_id:'new',modality:'proposed',actor:'supplier',entity:'Supplier A',scenario:'base',force:'offer',reviewed:true}];
+test('existing 60 days and proposed 30 days are not contradictory',()=>{const r=contextualize(example(),annotated);assert.equal(r.tensions.length,0);assert.equal(r.distinguished_pairs.length,1);assert(r.distinguished_pairs[0].reasons.includes('different_modality'));});
+test('same-context incompatible claims trigger review rather than legal verdict',()=>{const a=annotated.map(x=>({...x,modality:'existing',force:'observation'}));const r=contextualize(example(),a);assert.equal(r.tensions.length,1);});
+test('different jurisdiction is not conflated',()=>{const a=annotated.map((x,i)=>({...x,modality:'existing',jurisdiction:i?'FR':'LB'}));const r=contextualize(example(),a);assert.equal(r.tensions.length,0);});
+test('non-overlapping periods are distinguished',()=>{const a=annotated.map((x,i)=>({...x,modality:'existing',effective_from:i?'2027-01-01':'2026-01-01',effective_to:i?null:'2026-12-31'}));const r=contextualize(example(),a);assert.equal(r.tensions.length,0);assert(r.distinguished_pairs[0].reasons.includes('nonoverlapping_period'));});
+test('unknown authority and conditions remain unresolved',()=>{const a=[{claim_id:'old',force:'binding_claim',conditions:['new']}];const r=contextualize(example(),a);const x=r.unresolved_context.find(v=>v.claim_id==='old');assert(x.issues.includes('authority_source_not_identified'));assert(x.issues.includes('conditions_require_evaluation'));});
+test('expired context is flagged',()=>{const r=contextualize(example(),[{claim_id:'old',effective_to:'2026-01-01'}]);assert(r.unresolved_context[0].issues.includes('no_longer_effective'));});
+test('rejects nonexistent condition references',()=>assert.throws(()=>contextualize(example(),[{claim_id:'old',conditions:['other']}])));
+test('rejects invented authority source',()=>assert.throws(()=>contextualize(example(),[{claim_id:'old',authority_source_id:'law_nonexistent'}])));
+test('requires source context rather than declaring a contradiction',()=>{const r=contextualize(example());assert.equal(r.tensions.length,0);assert.equal(r.distinguished_pairs[0].reason,'unknown_context');});
