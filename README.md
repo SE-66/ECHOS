@@ -11,7 +11,8 @@ A runnable, dependency-free Python application for building and independently ev
 Requires **Python 3.10+**. No external packages, paid APIs or training needed.
 
 ```bash
-cd echo_trace
+git clone https://github.com/SE-66/ECHOS.git
+cd ECHOS
 python web_demo.py
 ```
 
@@ -75,7 +76,7 @@ Each exported case includes the decision question, explicitly specified corporat
 Read **ALGORITHM_SPEC.md** for the architecture, formal definition, research link to ECHO, ACBS and DCAG, prior-art risks, patentability boundaries, test designs and development roadmap.
 
 ```
-echo_trace/
+ECHOS/
 ├── echo_trace.py                 # Engine, deterministic oracle, generator, scorer, CLI
 ├── web_demo.py                   # Local 1-page browser app and rule-server
 ├── ALGORITHM_SPEC.md             # Research/engineering design and novelty hypotheses
