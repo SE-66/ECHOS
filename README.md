@@ -11,6 +11,10 @@ A runnable, dependency-free Python application for building and independently ev
 
 > **Repository status:** Local Python research prototype + deployable Cloudflare Workers demonstration. See [CLOUDFLARE_NOTES.md](CLOUDFLARE_NOTES.md). This repository is public; publishing source can affect future patent options. No open-source license has been granted.
 
+## New in v0.5 — Research Lab
+
+`/lab.html` introduces evidence-linked candidate contract/policy extraction, decision requirement gap-screening, provenance and date checks for supplied legal-source records, and guarded Workers AI scenario testing. These are bounded workflows, NOT autonomous legal interpretation, a maintained authoritative legal corpus, exhaustive gap discovery, or independently scored cross-model benchmarking. See [RESEARCH_LAB_V05.md](RESEARCH_LAB_V05.md).
+
 ## What changed in 0.3 — connected financial decisions
 
 The Cloudflare landing page (`/`) now checks **one business decision against multiple linked financial requirements**. One financial input can affect several rules. The engine checks evidence gaps, calculations, currency/unit and reporting-period consistency, and shows which requirements the changed inputs reach. It accepts structured custom JSON models instead of requiring the user to select only liquidity, pricing, budgeting or profitability.

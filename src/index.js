@@ -1,3 +1,4 @@
+import {extractCandidates,findMissingRequirements,checkLegalSources,runModelExperiment,ALLOWED_MODELS} from './research-lab.js';
 import {evaluate as evaluateConnected} from './context-engine.js';
 import {evaluateSituation} from './situation-engine.js';
 import {SITUATION,SITUATION_PRESETS} from './situation-example.js';
@@ -296,8 +297,9 @@ function score(caseRecord,answer){
     appropriate_reassessment,all_checks_passed:errors.length===0,errors,failure_type,
     baseline_hash:truth.baseline.certificate_hash,updated_hash:truth.updated.certificate_hash};
 }
-async function handleApi(request){
+async function handleApi(request,env){
   const pathname=new URL(request.url).pathname;
+  if(pathname==='/api/lab/models'&&request.method==='GET')return responseJson({models:ALLOWED_MODELS,configured:Boolean(env?.AI)});
   if(pathname==='/api/health'&&request.method==='GET')return responseJson({ok:true,version:'0.4.0',platform:'cloudflare-workers'});
   if(pathname==='/api/bank'&&request.method==='GET')return responseJson(DECISION_BANK);
   if(pathname==='/api/situation/example'&&request.method==='GET')return responseJson({model:SITUATION,presets:SITUATION_PRESETS});
@@ -316,6 +318,13 @@ async function handleApi(request){
   try {obj=JSON.parse(raw)}catch {return responseJson({error:'Invalid JSON'},400)}
   try {
     if(!isRecord(obj))fail('Invalid request body');
+    if(pathname==='/api/lab/extract')return responseJson(extractCandidates(obj));
+    if(pathname==='/api/lab/gaps')return responseJson(findMissingRequirements(obj));
+    if(pathname==='/api/lab/legal')return responseJson(checkLegalSources(obj));
+    if(pathname==='/api/lab/test-ai'){
+      if(!env?.ECHOS_LAB_KEY||request.headers.get('x-echos-lab-key')!==env.ECHOS_LAB_KEY)return responseJson({error:'Private lab access required'},403);
+      return responseJson(await runModelExperiment({ai:env.AI,scenario:obj.scenario,models:obj.models}));
+    }
     if(pathname==='/api/situation/evaluate')return responseJson(evaluateSituation(obj.model,obj.changes||{}));
     if(pathname==='/api/connected/evaluate')return responseJson(evaluateConnected(obj.model,obj.changes||{}));
     if(pathname==='/api/evaluate'){
@@ -340,7 +349,7 @@ async function handleApi(request){
 export default {
   async fetch(request,env){
     const pathname=new URL(request.url).pathname;
-    if(pathname.startsWith('/api/'))return handleApi(request);
+    if(pathname.startsWith('/api/'))return handleApi(request,env);
     if(env?.ASSETS)return env.ASSETS.fetch(request);
     return new Response('Not found',{status:404});
   }
