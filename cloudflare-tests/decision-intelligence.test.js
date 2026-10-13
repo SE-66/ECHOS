@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {assessIntelligence} from './decision-intelligence.js';
+const base=()=>({as_of:'2026-10-13',states:[{id:'now',mode:'actual'},{id:'proposal',mode:'proposed'}],requirements:[{id:'consent',dimension:'permissibility',evidence_status:'verified_by_reviewer',observation:'satisfied',applies_to:['now','proposal'],source_reference:'contract',authority:'board',claim_ids:['cl']},{id:'cash',dimension:'feasibility',evidence_status:'verified_by_reviewer',observation:'breached',applies_to:['proposal'],source_reference:'forecast',claim_ids:['cl']}],transitions:[{from:'now',to:'proposal'}],coverage_reviewed:false,alternatives_reviewed:false,scenarios_reviewed:false});
+const prior={evidence:{claims:[{id:'cl'}]},graph:{nodes:[],exposures:[]}};
+test('separates permission from feasibility',()=>{const r=assessIntelligence(base(),prior);const p=r.states.find(x=>x.state_id==='proposal');assert.equal(p.dimensions.permissibility,'satisfied');assert.equal(p.dimensions.feasibility,'breached')});
+test('reports open world omissions',()=>{const r=assessIntelligence(base(),prior);assert.equal(r.open_world_warnings.length,3)});
+test('detects descriptive transitions',()=>{const r=assessIntelligence(base(),prior);assert(r.transitions[0].changed_requirements.includes('cash'))});
+test('expired rule is not considered a breach',()=>{const b=base();b.requirements[1].to='2026-01-01';assert.equal(assessIntelligence(b,prior).requirements.find(x=>x.requirement_id==='cash').finding,'not_applicable_by_declared_date')});
+test('unknown exception prevents conclusion',()=>{const b=base();b.requirements[0].exceptions=[{status:'unknown'}];assert.equal(assessIntelligence(b,prior).requirements[0].finding,'requires_review')});
+test('active exception requires review',()=>{const b=base();b.requirements[0].exceptions=[{status:'active'}];assert.equal(assessIntelligence(b,prior).requirements[0].finding,'exception_claimed')});
+test('disputed evidence prevents conclusion',()=>{const b=base();b.requirements[0].evidence_status='disputed';assert.equal(assessIntelligence(b,prior).requirements[0].finding,'requires_review')});
+test('unknown claim link rejected',()=>{const b=base();b.requirements[0].claim_ids=['inexistent'];assert.throws(()=>assessIntelligence(b,prior),/Unknown supporting claim/)});
+test('unknown state link rejected',()=>{const b=base();b.requirements[0].applies_to=['nonexistent'];assert.throws(()=>assessIntelligence(b,prior),/Unknown applicable state/)});

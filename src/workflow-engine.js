@@ -1,3 +1,4 @@
+import {assessIntelligence} from './decision-intelligence.js';
 /** ECHOS integration v0.6: traceable Steps 1–5. Never promotes supplied evidence to verified law.
  * API output is analytical assistance, not company-specific financial/legal approval.
  */
@@ -54,7 +55,7 @@ function runWorkflow(input,{includeExperiment=false}={}){
  ])];
  const workflowStatus=openIssues.length?'requires_review':'mapped_with_declared_sources';
  // Critical: comparison is shown as a conditional model result even if the case has unresolved evidence.
- const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,open_issues:openIssues,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
+ const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,open_issues:openIssues,decision_intelligence:bankV2,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
  if(includeExperiment){
   if(!isObj(input.experiment))fail('A separately designed paired experiment is required');
   const prepared=prepareExperiment(input.experiment);
