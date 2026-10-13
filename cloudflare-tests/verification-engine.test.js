@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {reconstruct} from '../src/case-engine.js';
+import {verifyDerivations,discoverRequirements} from '../src/verification-engine.js';
+const specimen=()=>reconstruct({as_of:'2026-10-13',sources:[{id:'ledger',title:'Cash ledger',review_declared:true}],claims:[{id:'opening',key:'opening',kind:'fact',status:'corroborated',type:'money',currency:'USD',value:200,source_ids:['ledger'],entity:'A',period:'2026-10'},{id:'outflow',key:'outflow',kind:'fact',status:'corroborated',type:'money',currency:'USD',value:80,source_ids:['ledger'],entity:'A',period:'2026-10'}]});
+const spec=(r,ob='120')=>verifyDerivations({claims:r.claims,sources:r.sources,derivations:[{id:'cash_calc',scenario_id:'base',alternative_id:'accept',criterion_id:'cash',expected_unit:'money:USD',expression:{op:'subtract',args:[{claim_id:'opening'},{claim_id:'outflow'}]}}],observations:{base:{accept:{cash:{value:ob,evidence:'documented'}}}}});
+test('consistent, sourced and matched cash calculation',()=>assert.equal(spec(specimen()).unresolved.length,0));
+test('mismatch is an explicit financial issue',()=>assert(spec(specimen(),'150').unresolved[0].issues.includes('derivation_disagrees_with_observation')));
+test('currency mismatch cannot be silently calculated',()=>{const r=specimen();r.claims[1].unit='EUR';assert(spec(r).unresolved[0].issues.includes('unit_mismatch'))});
+test('different company entities require review',()=>{const r=specimen();r.claims[1].entity='B';assert(spec(r).unresolved[0].issues.includes('entity_mismatch'))});
+test('different reporting periods require review',()=>{const r=specimen();r.claims[1].period='2026-11';assert(spec(r).unresolved[0].issues.includes('period_mismatch'))});
+test('unsupported inputs prevent clean arithmetic',()=>{const r=specimen();r.claims[1].status='disputed';assert(spec(r).unresolved[0].issues.includes('input_not_corroborated:outflow'))});
+test('contract consent generates a source-linked candidate',()=>{const r=reconstruct({sources:[{id:'contract',title:'Amendment'}],claims:[{id:'clause',key:'clause',kind:'fact',type:'text',value:'Written board consent required for amendment.',source_ids:['contract']}]});const d=discoverRequirements({claims:r.claims,sources:r.sources,criteria:[{id:'cash',label:'Cash',source:'Treasury'}]});assert(d.unmapped_areas.includes('approval'));assert(d.candidates.some(x=>x.source_ids.includes('contract')))});
+test('no document triggers no false completeness certificate',()=>{const d=discoverRequirements({claims:[],sources:[],criteria:[]});assert.equal(d.coverage_status,'never_exhaustive')});
+test('division by zero never returns a clean calculation',()=>{const r=specimen();r.claims[1].value='0';const q=verifyDerivations({claims:r.claims,sources:r.sources,derivations:[{id:'ratio',scenario_id:'base',alternative_id:'accept',criterion_id:'cash',expression:{op:'divide',args:[{claim_id:'opening'},{claim_id:'outflow'}]}}],observations:{base:{accept:{cash:{value:'1'}}}}});assert(q.unresolved[0].issues.includes('division_by_zero'))});
+test('workflow cannot silently omit all derivations',async()=>{
+ const {runWorkflow}=await import('../src/workflow-engine.js');
+ const input={case:{as_of:'2026-10-13',sources:[{id:'contract',title:'Supplier terms'}],claims:[{id:'term',key:'payment_days',kind:'fact',type:'number',value:30,source_ids:['contract']}]},graph:{scenario:'existing',nodes:[],relationships:[],changed_claim_ids:[]},decision:{alternatives:[{id:'a',label:'A'},{id:'b',label:'B'}],criteria:[{id:'cash',label:'Cash',type:'number',role:'hard',operator:'gte',threshold:'100',source:'Treasury'}],scenarios:[{id:'base',label:'Base'}],observations:{base:{a:{cash:{value:'120',evidence:'documented'}},b:{cash:{value:'110',evidence:'documented'}}}}}};
+ const r=runWorkflow(input);assert(r.open_issues.includes('financial_derivation_missing:base/a/cash'));assert(r.open_issues.includes('financial_derivation_missing:base/b/cash'));
+});

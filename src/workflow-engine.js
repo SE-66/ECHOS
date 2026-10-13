@@ -1,3 +1,4 @@
+import {verifyDerivations,discoverRequirements} from './verification-engine.js';
 import {assessIntelligence} from './decision-intelligence.js';
 /** ECHOS integration v0.6: traceable Steps 1–5. Never promotes supplied evidence to verified law.
  * API output is analytical assistance, not company-specific financial/legal approval.
@@ -112,12 +113,22 @@ function runWorkflow(input,{includeExperiment=false}={}){
    if(row.status==='unresolved')openIssues.push('decision_assessment_unresolved:'+row.scenario_id+'/'+row.alternative_id);
    for(const c of row.criteria)if(c.result==='unknown')openIssues.push('criterion_observation_unresolved:'+row.scenario_id+'/'+row.alternative_id+'/'+c.criterion_id);
  }
+ const derivations=verifyDerivations({claims:evidence.claims,sources:evidence.sources,derivations:input.derivations||[],observations:input.decision.observations});
+ const discovery=discoverRequirements({sources:evidence.sources,claims:evidence.claims,criteria,review:input.requirement_review||[]});
+ for(const d of derivations.unresolved)openIssues.push('derivation_unresolved:'+d.id);
+ const derivationTargets=new Set(derivations.results.map(d=>[d.scenario_id,d.alternative_id,d.criterion_id].join('/')));
+ for(const row of comparison.assessments)for(const c of row.criteria){
+   const meta=criteria.find(x=>x.id===c.criterion_id);
+   const key=[row.scenario_id,row.alternative_id,c.criterion_id].join('/');
+   if(meta?.type==='number'&&!derivationTargets.has(key))openIssues.push('financial_derivation_missing:'+key);
+ }
+ for(const a of discovery.unmapped_areas)openIssues.push('potential_requirement_gap:'+a);
  const coverage=coverageChallenge(input);
  openIssues.push(...coverage.warnings);
  const uniqueIssues=[...new Set(openIssues)];
  const workflowStatus=uniqueIssues.length?'requires_review':'mapped_with_declared_sources';
  // Critical: comparison is shown as a conditional model result even if the case has unresolved evidence.
- const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,observation_provenance_audit:proofAudit.results,coverage_challenge:coverage,action_justification:'not_independently_established',open_issues:uniqueIssues,decision_intelligence:bankV2,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
+ const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,observation_provenance_audit:proofAudit.results,coverage_challenge:coverage,action_justification:'not_independently_established',open_issues:uniqueIssues,derivation_verification:derivations,requirement_discovery:discovery,decision_intelligence:bankV2,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
  if(includeExperiment){
   if(!isObj(input.experiment))fail('A separately designed paired experiment is required');
   const prepared=prepareExperiment(input.experiment);

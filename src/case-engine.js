@@ -59,7 +59,7 @@ function reconstruct(input) {
     if(kind==='unknown' && value!==null)fail('Unknown cannot have a decided value');
     if(kind!=='unknown' && value===null)fail('Missing value must be typed unknown');
     const claim={id,key,label:string(raw.label,200)||key,kind,status,type,value,unit:units,source_ids:refs,
-      applies_from:appliesFrom,applies_to:appliesTo,notes:string(raw.notes,500)||null};
+      applies_from:appliesFrom,applies_to:appliesTo,entity:string(raw.entity,100)||null,period:string(raw.period,40)||null,notes:string(raw.notes,500)||null};
     claim.evidence_issues=[];
     if(!refs.length)claim.evidence_issues.push('no_source');
     if(kind==='unknown')claim.evidence_issues.push('unknown_value');
