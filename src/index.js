@@ -1,3 +1,4 @@
+import {reconstruct as reconstructCase} from './case-engine.js';
 import {extractCandidates,findMissingRequirements,checkLegalSources,runModelExperiment,ALLOWED_MODELS} from './research-lab.js';
 import {evaluate as evaluateConnected} from './context-engine.js';
 import {evaluateSituation} from './situation-engine.js';
@@ -318,6 +319,7 @@ async function handleApi(request,env){
   try {obj=JSON.parse(raw)}catch {return responseJson({error:'Invalid JSON'},400)}
   try {
     if(!isRecord(obj))fail('Invalid request body');
+    if(pathname==='/api/case/reconstruct')return responseJson(reconstructCase(obj));
     if(pathname==='/api/lab/extract')return responseJson(extractCandidates(obj));
     if(pathname==='/api/lab/gaps')return responseJson(findMissingRequirements(obj));
     if(pathname==='/api/lab/legal')return responseJson(checkLegalSources(obj));
