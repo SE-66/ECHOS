@@ -11,7 +11,7 @@ async function examine(domain,values={},evidence={},new_label=undefined){
 test('Cloudflare API and static asset routing',async()=>{
   const resp=await worker.fetch(new Request('https://echos.example/api/health'));
   assert.equal(resp.status,200);
-  assert.deepEqual(await resp.json(),{ok:true,version:'0.1.0',platform:'cloudflare-workers'});
+  assert.deepEqual(await resp.json(),{ok:true,version:'0.2.0',platform:'cloudflare-workers'});
   const home=await worker.fetch(new Request('https://echos.example/'),{ASSETS:{fetch:()=>new Response('STATIC UI')}});
   assert.equal(await home.text(),'STATIC UI');
 });
@@ -67,4 +67,53 @@ test('score API recalculates reference instead of trusting injected case oracle'
 test('Worker API rejects malformed data',async()=>{
   const r=await worker.fetch(new Request('https://echos.example/api/evaluate',{method:'POST',body:JSON.stringify({domain:'pricing',values:{price:'-1'},evidence:{}})}));
   assert.equal(r.status,400);
+});
+
+test('next-gen impact allocation adds up for offsetting liquidity changes',async()=>{
+  const r=await examine('liquidity',{supplier_due:'250000',cash:'2150000'});
+  assert.equal(r.expected_relation,'REASSESS_BUT_PRESERVE');
+  const s=SPECS.liquidity,b=getBaseline('liquidity');
+  const updated=updatedState(s,b,{values:{supplier_due:'250000',cash:'2150000'},evidence:{}});
+  const insights=(await import('../src/index.js')).presentAnalysis(s,b,updated,r);
+  assert.equal(insights.rule_cushion_before,insights.rule_cushion_after);
+  assert.equal(insights.contributors.length,2);
+  const by=Object.fromEntries(insights.contributors.map(x=>[x.field,x.impact]));
+  assert.equal(by.supplier_due,'-150000');
+  assert.equal(by.cash,'150000');
+});
+
+test('next-gen pricing attributes policy and price interaction without double counting',async()=>{
+  const {presentAnalysis}=await import('../src/index.js');
+  const spec=SPECS.pricing,base=getBaseline('pricing');
+  const later=updatedState(spec,base,{values:{price:'120',minimum_margin:'0.35',variable_cost:'85'},evidence:{}});
+  const comparison=await compare(spec,base,later);
+  const insights=presentAnalysis(spec,base,later,comparison);
+  const sum=insights.contributors.reduce((v,x)=>v+Number(x.impact),0);
+  assert.ok(Math.abs(sum-(Number(insights.rule_cushion_after)-Number(insights.rule_cushion_before)))<0.000005);
+  assert.equal(insights.rule_cushion_before,'15');
+  assert.equal(insights.rule_cushion_after,'-7');
+  assert.equal(insights.contributors.length,3);
+});
+
+test('next-gen independently identifies evidence failure and keeps numeric impact separate',async()=>{
+  const {presentAnalysis}=await import('../src/index.js');
+  const spec=SPECS.pricing,base=getBaseline('pricing');
+  const later=updatedState(spec,base,{values:{},evidence:{variable_cost:'disputed'}});
+  const comparison=await compare(spec,base,later);
+  const insights=presentAnalysis(spec,base,later,comparison);
+  assert.equal(insights.evidence_status,'needs_verification');
+  assert.equal(insights.contributors.length,0);
+  assert.equal(insights.rule_cushion_before,insights.rule_cushion_after);
+});
+
+test('API delivers plain-language insights and rejects invalid hypothetical numbers',async()=>{
+  const good=await worker.fetch(new Request('https://echos.example/api/evaluate',{method:'POST',
+    body:JSON.stringify({domain:'pricing',values:{variable_cost:'80'},evidence:{}})}));
+  assert.equal(good.status,200);
+  const data=await good.json();
+  assert.match(data.insights.title,/decision needs to change/i);
+  assert.equal(data.insights.rule_gap,'5');
+  const bad=await worker.fetch(new Request('https://echos.example/api/evaluate',{method:'POST',
+    body:JSON.stringify({domain:'pricing',values:{price:'1e500'},evidence:{}})}));
+  assert.equal(bad.status,400);
 });

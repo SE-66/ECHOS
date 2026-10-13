@@ -158,6 +158,91 @@ async function compare(spec,old,newer) {
     numeric_slack_changed,evidence_changed:Object.keys(evidence_changes).length>0,
     oracle_signature:await sha256({b:b.certificate_hash,n:n.certificate_hash,response})};
 }
+/** ECHOS v0.2: reconstructable rule impact analysis.
+ * Contributions are exact finite-difference allocations over the explicit financial
+ * formula, not claims about real-world causality or an AI's internal reasoning.
+ * Factorial subset weighting ensures the allocated impacts sum to total rule change.
+ */
+function ruleCushion(spec,state){
+  const v=Object.fromEntries(spec.variables.map(k=>[k,parseDecimal(state.values[k])]));
+  if(spec.domain==='pricing')return (v.price-v.variable_cost)*SCALE-v.minimum_margin*v.price;
+  return signedSlack(spec,state).num*SCALE;
+}
+function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r}
+function changedContributions(spec,old,newer){
+  const keys=spec.variables.filter(k=>old.values[k]!==newer.values[k]);
+  const n=keys.length;
+  if(!n)return [];
+  const metric=[];
+  for(let mask=0;mask<(1<<n);mask++){
+    const state={...old,values:{...old.values}};
+    keys.forEach((key,i)=>{if(mask&(1<<i))state.values[key]=newer.values[key]});
+    metric.push(ruleCushion(spec,state));
+  }
+  const total=factorial(n);
+  const results=keys.map((key,i)=>{
+    let weighted=0n;
+    for(let mask=0;mask<(1<<n);mask++){
+      if(mask&(1<<i))continue;
+      const subsetCount=mask.toString(2).replace(/0/g,'').length;
+      const weight=factorial(subsetCount)*factorial(n-subsetCount-1);
+      weighted+=BigInt(weight)*(metric[mask|(1<<i)]-metric[mask]);
+    }
+    return {field:key,before:old.values[key],after:newer.values[key],
+      impact:formatRatio(weighted,BigInt(total)*SCALE*SCALE,6),
+      direction:weighted<0n?'reduces_cushion':weighted>0n?'increases_cushion':'no_cushion_effect'};
+  });
+  results.sort((a,b)=>{
+    const aa=Math.abs(Number(a.impact)),bb=Math.abs(Number(b.impact));
+    return bb-aa;
+  });
+  return results;
+}
+function presentAnalysis(spec,old,newer,oracle){
+  const b=oracle.baseline,n=oracle.updated;
+  const cushion=ruleCushion(spec,newer);
+  const marginFormat=spec.domain==='pricing'?'per product unit':'in the scenario’s financial units';
+  const gap=cushion<0n?formatRatio(-cushion,SCALE*SCALE,6):'0';
+  const cushionBefore=formatRatio(ruleCushion(spec,old),SCALE*SCALE,6);
+  const cushionAfter=formatRatio(cushion,SCALE*SCALE,6);
+  const relation=oracle.expected_relation;
+  let title='',summary='',next_step='',tone='neutral';
+  if(relation==='EVIDENCE_REQUIRED'){
+    title='We need better evidence before deciding';
+    summary=`The information for ${n.deficits.join(', ').replaceAll('_',' ')} is not verified. A calculated result alone is not enough to approve this decision.`;
+    next_step='Check the missing or disputed information, then evaluate again.';
+    tone='warning';
+  } else if(relation==='EVIDENCE_RESTORED'){
+    title='The evidence is available again';
+    summary=cushion<0n?'The information is now verified, but the current plan does not meet the stated financial rule.':'The information is now verified and the stated financial rule is satisfied.';
+    next_step=cushion<0n?'Review the plan and the policy requirement.':'The rule check is complete; confirm other business considerations separately.';
+    tone=cushion<0n?'warning':'positive';
+  } else if(relation==='ADAPT_DECISION'){
+    title='The financial decision needs to change';
+    summary=cushion<0n?'The updated figures no longer satisfy the stated financial limit.':'The updated figures now satisfy the stated financial limit.';
+    next_step=cushion<0n?'Reconsider the plan before approving it.':'The rule permits the plan; verify other requirements before acting.';
+    tone='warning';
+  } else if(relation==='REASSESS_BUT_PRESERVE'){
+    title='The numbers changed, but the decision can stay';
+    summary=cushion<0n?'The plan still fails the financial rule, even after the update.':'The plan still meets the financial rule after the update.';
+    next_step='Document the reassessment; a changed number does not always require a new decision.';
+    tone='positive';
+  } else {
+    title='No change to the financial decision';
+    summary=Object.keys(oracle.presentation_changes).length?'Only the report presentation changed; the rule-relevant figures and evidence stayed the same.':'Nothing affecting this rule changed.';
+    next_step='Keep the previous rule-based conclusion unless other business information changes.';
+    tone='positive';
+  }
+  return {title,summary,next_step,tone,rule_status:cushion>=0n?'within_limit':'outside_limit',
+    evidence_status:n.deficits.length?'needs_verification':'all_marked_verified',
+    rule_cushion_before:cushionBefore,rule_cushion_after:cushionAfter,
+    rule_gap:gap,units:marginFormat,
+    // Financial impact is defined only for numerical inputs; evidence failures remain distinct.
+    contributors:changedContributions(spec,old,newer),
+    changed_evidence:oracle.evidence_changes,
+    presentation_only_changes:oracle.presentation_changes,
+    limitations:'Synthetic rule demonstration. Evidence statuses are user-provided, not document-authenticated. Impacts represent changes in an explicit rule, not causal effects or full financial advice.'};
+}
 function responseJson(data,status=200) {
   return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8',
     'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer'}});
@@ -208,7 +293,7 @@ function score(caseRecord,answer){
 }
 async function handleApi(request){
   const pathname=new URL(request.url).pathname;
-  if(pathname==='/api/health'&&request.method==='GET')return responseJson({ok:true,version:'0.1.0',platform:'cloudflare-workers'});
+  if(pathname==='/api/health'&&request.method==='GET')return responseJson({ok:true,version:'0.2.0',platform:'cloudflare-workers'});
   if(pathname==='/api/specs'&&request.method==='GET'){
     return responseJson(Object.fromEntries(Object.entries(SPECS).map(([domain,spec])=>[domain,{
       name:spec.name,question:spec.question,policy:spec.policy,good_action:spec.good_action,
@@ -228,7 +313,7 @@ async function handleApi(request){
       const old=getBaseline(obj.domain),next=updatedState(spec,old,obj);
       const oracle=await compare(spec,old,next);
       const caseRecord={id:'cloudflare-demo',domain:obj.domain,family:'manual',baseline:old,changed_state:next};
-      return responseJson({oracle,case:caseRecord});
+      return responseJson({oracle,insights:presentAnalysis(spec,old,next,oracle),case:caseRecord});
     }
     if(pathname==='/api/score'){
       const supplied=obj.case;
@@ -250,4 +335,4 @@ export default {
     return new Response('Not found',{status:404});
   }
 };
-export {SPECS, BASELINES, getBaseline, updatedState, signedSlack, reference, compare, score, parseDecimal, decimalString};
+export {SPECS, BASELINES, getBaseline, updatedState, signedSlack, reference, compare, score, parseDecimal, decimalString, ruleCushion, changedContributions, presentAnalysis};

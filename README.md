@@ -1,10 +1,16 @@
 # ECHO-TRACE — Evidence-Conditioned Decision-Transition Engine
 
-**Version:** 0.1.0 (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
+**Version:** 0.2.0 Cloudflare UX + explanation layer (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
 
 A runnable, dependency-free Python application for building and independently evaluating financial decision transitions. It implements the research distinction between change detection, financial relevance, evidence adequacy, justified decision adaptation, and appropriate stability.
 
 > **Repository status:** Local Python research prototype + deployable Cloudflare Workers demonstration. See [CLOUDFLARE_NOTES.md](CLOUDFLARE_NOTES.md). This repository is public; publishing source can affect future patent options. No open-source license has been granted.
+
+## What changed in 0.2
+
+ECHOS now speaks in finance-manager language. Choose one of six example changes or edit your own numbers, then review a plain-language conclusion, a before/after comparison, and a breakdown of how simultaneously changed figures affected the required financial limit. Evidence gaps remain separate from arithmetic. The underlying formulas are still **explicit synthetic rules**; this is not an AI that understands arbitrary financial documents.
+
+Read **[NEXT_GEN_ALGORITHM.md](NEXT_GEN_ALGORITHM.md)** for the new rule-cushion attribution mathematics, accuracy limits, and the next research milestones. The initial local Python demonstration still uses its earlier interface.
 
 ## Deploy on Cloudflare Workers
 
@@ -103,6 +109,7 @@ ECHOS/
 ├── src/index.js                 # Cloudflare Worker rule and scoring API
 ├── public/index.html            # Cloudflare browser UI
 ├── cloudflare-tests/worker.test.js # Cloudflare adapter tests
+├── NEXT_GEN_ALGORITHM.md         # Cloudflare v0.2 explanation/attribution architecture
 ├── ALGORITHM_SPEC.md             # Research/engineering design and novelty hypotheses
 ├── README.md                     # This file
 ├── CLOUDFLARE_NOTES.md          # Future deployment plan and security requirements
