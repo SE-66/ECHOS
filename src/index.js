@@ -1,3 +1,4 @@
+import {runWorkflow} from './workflow-engine.js';
 import {evaluateAlternatives} from './alternative-engine.js';
 import {traceRelationships} from './relationship-engine.js';
 import {contextualize as contextualizeCase} from './context-interpreter.js';
@@ -322,6 +323,8 @@ async function handleApi(request,env){
   try {obj=JSON.parse(raw)}catch {return responseJson({error:'Invalid JSON'},400)}
   try {
     if(!isRecord(obj))fail('Invalid request body');
+    if(pathname==='/api/workflow/evaluate')return responseJson(runWorkflow(obj));
+    if(pathname==='/api/decision/compare')return responseJson(evaluateAlternatives(obj));
     if(pathname==='/api/case/relationships'){const reconstructed=reconstructCase(obj);const context=contextualizeCase(reconstructed,obj.annotations||[]);return responseJson({reconstructed,context,graph:traceRelationships(reconstructed,context,obj.graph||{})});}
     if(pathname==='/api/case/context'){const reconstructed=reconstructCase(obj);return responseJson({reconstructed,context:contextualizeCase(reconstructed,obj.annotations||[])});}
     if(pathname==='/api/case/reconstruct')return responseJson(reconstructCase(obj));
