@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {prepareExperiment,scoreExperiment} from '../src/experiment-engine.js';
+const model=(cash,evidence='documented')=>({decision:'Supplier arrangement',alternatives:[{id:'accept',label:'Accept'},{id:'negotiate',label:'Negotiate'}],criteria:[{id:'cash',label:'Cash cushion',type:'number',role:'hard',operator:'gte',threshold:'100',source:'Internal treasury policy'}],scenarios:[{id:'base',label:'Base'}],observations:{base:{accept:{cash:{value:String(cash),evidence}},negotiate:{cash:{value:'120',evidence:'documented'}}}}});
+const pair=(id,b,c,material_change=true)=>({id,baseline:model(b),changed:model(c),material_change});
+const run=pairs=>prepareExperiment({pairs});
+const answer=(pub,key,stage)=>{const item=stage==='baseline'?key.baseline:key.changed;return {case_id:stage==='baseline'?key.baseline_id:key.changed_id,assessments:{...item}}};
+test('detects justified adaptation when liquidity constraint crosses',()=>{const r=run([pair('p1',110,90)]);assert.equal(r.private_answer_key[0].category,'adapt');assert.equal(r.private_answer_key[0].changed['base/accept'],'blocked_by_stated_rule')});
+test('distinguishes reassessment with unchanged final rule',()=>{const r=run([pair('p2',110,105)]);assert.equal(r.private_answer_key[0].category,'reassess_preserve')});
+test('distinguishes irrelevant stable values',()=>{const r=run([pair('p3',110,110,false)]);assert.equal(r.private_answer_key[0].category,'preserve')});
+test('evidence loss changes justification even if arithmetic remains',()=>{const p=pair('p4',110,110);p.changed=model(110,'disputed');const r=run([p]);assert.equal(r.private_answer_key[0].category,'evidence_required')});
+test('scores correct paired answers and ignores narrative as correctness proof',()=>{const r=run([pair('p5',110,90)]);const k=r.private_answer_key[0];const out=scoreExperiment(r.private_answer_key,[answer(null,k,'baseline'),answer(null,k,'changed')]);assert.equal(out.totals.correct_transitions,1)});
+test('wrong changed output is detected',()=>{const r=run([pair('p6',110,90)]);const k=r.private_answer_key[0];const a=answer(null,k,'changed');a.assessments['base/accept']='passes_stated_rules';const out=scoreExperiment(r.private_answer_key,[answer(null,k,'baseline'),a]);assert.equal(out.totals.correct_transitions,0)});
+test('missing responses are not counted as success',()=>{const r=run([pair('p7',110,90)]);const out=scoreExperiment(r.private_answer_key,[]);assert.equal(out.totals.complete_pairs,0)});
+test('rejects duplicate answers',()=>{const r=run([pair('p8',110,90)]);const k=r.private_answer_key[0];const a=answer(null,k,'baseline');assert.throws(()=>scoreExperiment(r.private_answer_key,[a,a]))});
