@@ -1,6 +1,11 @@
 # ECHO-TRACE — Evidence-Conditioned Decision-Transition Engine
 
-**Version:** Cloudflare Connected Decision Studio 0.3.0 / Python research engine 0.1.0 (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
+**Version:** Cloudflare Decision Knowledge Bank 0.4.0 / Python research engine 0.1.0 (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
+
+## New in v0.4 — mixed financial and nonfinancial decision conditions
+
+The default page now includes a **32-archetype decision bank** and a mixed-type situation explorer. It can represent cash constraints, company policies, contract amendments, approvals, qualitative counterparty risk and conditions requiring legal review in the same scenario. Every rule is source-linked, the effective dates are checked, and changed facts are traced across multiple requirements and decisions. **These are catalogue entries, not 32 ready-made decision calculators or authoritative legal models.** The fictional example does not represent any real law. No document ingestion or automatic model learning is present. See [DECISION_KNOWLEDGE_BANK.md](DECISION_KNOWLEDGE_BANK.md).
+
 
 A runnable, dependency-free Python application for building and independently evaluating financial decision transitions. It implements the research distinction between change detection, financial relevance, evidence adequacy, justified decision adaptation, and appropriate stability.
 
@@ -10,7 +15,7 @@ A runnable, dependency-free Python application for building and independently ev
 
 The Cloudflare landing page (`/`) now checks **one business decision against multiple linked financial requirements**. One financial input can affect several rules. The engine checks evidence gaps, calculations, currency/unit and reporting-period consistency, and shows which requirements the changed inputs reach. It accepts structured custom JSON models instead of requiring the user to select only liquidity, pricing, budgeting or profitability.
 
-See **[CONNECTED_DECISION_ENGINE.md](CONNECTED_DECISION_ENGINE.md)** for the implemented contract, example, tests, limitations and next research work. The older single-rule explorer is still available at `/legacy.html`. This is a configurable relationship and rules engine, **not an AI capable of learning valid relationships independently from unrestricted documents**. No automatic AI-model evaluation has been connected to the new engine yet.
+See **[CONNECTED_DECISION_ENGINE.md](CONNECTED_DECISION_ENGINE.md)** for the implemented contract, example, tests, limitations and next research work. The previous connected numerical explorer remains at `/connected.html`, and the older single-rule explorer remains at `/legacy.html`. This is a configurable relationship and rules engine, **not an AI capable of learning valid relationships independently from unrestricted documents**. No automatic AI-model evaluation has been connected to the new engine yet.
 
 ## What changed in 0.2
 
@@ -20,7 +25,7 @@ Read **[NEXT_GEN_ALGORITHM.md](NEXT_GEN_ALGORITHM.md)** for the new rule-cushion
 
 ## Deploy on Cloudflare Workers
 
-The repository now includes `wrangler.jsonc`, a JavaScript Worker (`src/index.js`) that ports the four deterministic research models, and static browser assets (`public/index.html` and `public/legacy.html`). Existing Cloudflare Git deployments can use **`npx wrangler deploy`** from the **repository root**. See [Cloudflare deployment instructions](CLOUDFLARE_NOTES.md).
+The repository includes `wrangler.jsonc`, a Cloudflare Worker (`src/index.js`) with the mixed-type situation engine plus the earlier research models, and static browser assets (`public/index.html`, `public/connected.html`, and `public/legacy.html`). Existing Cloudflare Git deployments can use **`npx wrangler deploy`** from the **repository root**. See [Cloudflare deployment instructions](CLOUDFLARE_NOTES.md).
 
 To preview locally with Wrangler:
 

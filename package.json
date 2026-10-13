@@ -1,9 +1,9 @@
 {
   "name": "echos-worker",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
-  "description": "Cloudflare Workers adapter for the ECHO-TRACE research demonstration",
+  "description": "ECHOS mixed-type financial decision knowledge and evaluation research prototype",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
