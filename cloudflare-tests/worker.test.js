@@ -11,7 +11,7 @@ async function examine(domain,values={},evidence={},new_label=undefined){
 test('Cloudflare API and static asset routing',async()=>{
   const resp=await worker.fetch(new Request('https://echos.example/api/health'));
   assert.equal(resp.status,200);
-  assert.deepEqual(await resp.json(),{ok:true,version:'0.2.0',platform:'cloudflare-workers'});
+  assert.deepEqual(await resp.json(),{ok:true,version:'0.3.0',platform:'cloudflare-workers'});
   const home=await worker.fetch(new Request('https://echos.example/'),{ASSETS:{fetch:()=>new Response('STATIC UI')}});
   assert.equal(await home.text(),'STATIC UI');
 });

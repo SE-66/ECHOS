@@ -1,3 +1,5 @@
+import {evaluate as evaluateConnected} from './context-engine.js';
+import {EXAMPLE,EXAMPLE_CHANGES} from './connected-examples.js';
 /** ECHOS Cloudflare Workers adapter: deterministic, synthetic research examples only.
  * This JS port intentionally keeps the Python reference implementation untouched.
  * Do NOT use the public demo's visible rules for confidential blind evaluations.
@@ -293,7 +295,8 @@ function score(caseRecord,answer){
 }
 async function handleApi(request){
   const pathname=new URL(request.url).pathname;
-  if(pathname==='/api/health'&&request.method==='GET')return responseJson({ok:true,version:'0.2.0',platform:'cloudflare-workers'});
+  if(pathname==='/api/health'&&request.method==='GET')return responseJson({ok:true,version:'0.3.0',platform:'cloudflare-workers'});
+  if(pathname==='/api/connected/example'&&request.method==='GET')return responseJson({model:EXAMPLE,presets:EXAMPLE_CHANGES});
   if(pathname==='/api/specs'&&request.method==='GET'){
     return responseJson(Object.fromEntries(Object.entries(SPECS).map(([domain,spec])=>[domain,{
       name:spec.name,question:spec.question,policy:spec.policy,good_action:spec.good_action,
@@ -308,6 +311,7 @@ async function handleApi(request){
   try {obj=JSON.parse(raw)}catch {return responseJson({error:'Invalid JSON'},400)}
   try {
     if(!isRecord(obj))fail('Invalid request body');
+    if(pathname==='/api/connected/evaluate')return responseJson(evaluateConnected(obj.model,obj.changes||{}));
     if(pathname==='/api/evaluate'){
       const spec=SPECS[obj.domain];if(!spec)fail('Unknown financial domain');
       const old=getBaseline(obj.domain),next=updatedState(spec,old,obj);

@@ -1,10 +1,16 @@
 # ECHO-TRACE — Evidence-Conditioned Decision-Transition Engine
 
-**Version:** 0.2.0 Cloudflare UX + explanation layer (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
+**Version:** Cloudflare Connected Decision Studio 0.3.0 / Python research engine 0.1.0 (October 2026) · **Maturity:** functional methodological prototype, not validated commercial software
 
 A runnable, dependency-free Python application for building and independently evaluating financial decision transitions. It implements the research distinction between change detection, financial relevance, evidence adequacy, justified decision adaptation, and appropriate stability.
 
 > **Repository status:** Local Python research prototype + deployable Cloudflare Workers demonstration. See [CLOUDFLARE_NOTES.md](CLOUDFLARE_NOTES.md). This repository is public; publishing source can affect future patent options. No open-source license has been granted.
+
+## What changed in 0.3 — connected financial decisions
+
+The Cloudflare landing page (`/`) now checks **one business decision against multiple linked financial requirements**. One financial input can affect several rules. The engine checks evidence gaps, calculations, currency/unit and reporting-period consistency, and shows which requirements the changed inputs reach. It accepts structured custom JSON models instead of requiring the user to select only liquidity, pricing, budgeting or profitability.
+
+See **[CONNECTED_DECISION_ENGINE.md](CONNECTED_DECISION_ENGINE.md)** for the implemented contract, example, tests, limitations and next research work. The older single-rule explorer is still available at `/legacy.html`. This is a configurable relationship and rules engine, **not an AI capable of learning valid relationships independently from unrestricted documents**. No automatic AI-model evaluation has been connected to the new engine yet.
 
 ## What changed in 0.2
 
@@ -14,7 +20,7 @@ Read **[NEXT_GEN_ALGORITHM.md](NEXT_GEN_ALGORITHM.md)** for the new rule-cushion
 
 ## Deploy on Cloudflare Workers
 
-The repository now includes `wrangler.jsonc`, a JavaScript Worker (`src/index.js`) that ports the four deterministic research models, and static browser assets (`public/index.html`). Existing Cloudflare Git deployments can use **`npx wrangler deploy`** from the **repository root**. See [Cloudflare deployment instructions](CLOUDFLARE_NOTES.md).
+The repository now includes `wrangler.jsonc`, a JavaScript Worker (`src/index.js`) that ports the four deterministic research models, and static browser assets (`public/index.html` and `public/legacy.html`). Existing Cloudflare Git deployments can use **`npx wrangler deploy`** from the **repository root**. See [Cloudflare deployment instructions](CLOUDFLARE_NOTES.md).
 
 To preview locally with Wrangler:
 
