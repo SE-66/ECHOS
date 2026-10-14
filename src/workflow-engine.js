@@ -1,3 +1,4 @@
+import {evaluateEpisode} from './episode-engine.js';
 import {inspectPassages} from './passage-engine.js';
 import {verifyDerivations,discoverRequirements} from './verification-engine.js';
 import {assessIntelligence} from './decision-intelligence.js';
@@ -130,12 +131,13 @@ function runWorkflow(input,{includeExperiment=false}={}){
   if(p.issues.includes('decision_criterion_not_linked'))openIssues.push('passage_criterion_unmapped:'+p.passage_id);
   if(p.issues.includes('affected_alternatives_unknown'))openIssues.push('passage_alternatives_unmapped:'+p.passage_id);
  }
+ const episode=evaluateEpisode(input.decision_episode||{}, {caseModel:evidence,comparison});
  const coverage=coverageChallenge(input);
  openIssues.push(...coverage.warnings);
  const uniqueIssues=[...new Set(openIssues)];
  const workflowStatus=uniqueIssues.length?'requires_review':'mapped_with_declared_sources';
  // Critical: comparison is shown as a conditional model result even if the case has unresolved evidence.
- const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,observation_provenance_audit:proofAudit.results,coverage_challenge:coverage,action_justification:'not_independently_established',open_issues:uniqueIssues,derivation_verification:derivations,requirement_discovery:discovery,passage_review:passageReview,decision_intelligence:bankV2,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
+ const output={case_id:evidence.case_id,status:workflowStatus,case_summary:evidence.summary,context_summary:context.summary,relationship_summary:graph.summary,comparison,criterion_trace:audit,observation_provenance_audit:proofAudit.results,coverage_challenge:coverage,action_justification:'not_independently_established',open_issues:uniqueIssues,derivation_verification:derivations,requirement_discovery:discovery,passage_review:passageReview,decision_episode:episode,decision_intelligence:bankV2,stage_results:{evidence,context,graph},notice:'All links and rules originate from supplied models; a declared review is not independent authentication. Comparison remains conditional even when mappings are complete. No automatic legal determination, causal proof or optimal business action.'};
  if(includeExperiment){
   if(!isObj(input.experiment))fail('A separately designed paired experiment is required');
   const prepared=prepareExperiment(input.experiment);
