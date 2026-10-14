@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {inspectPassages} from '../src/passage-engine.js';
+const inspect=(excerpt,rest={})=>inspectPassages({sources:[{id:'doc'}],claims:[],criteria:[{id:'consent'}],alternatives:[{id:'accept'}],as_of:'2026-10-14',passages:[{id:'p',source_id:'doc',excerpt,locator:'clause 4',entity:'Company',criterion_ids:['consent'],alternative_ids:['accept'],...rest}]}).candidates[0];
+const samples=[['The company must obtain board approval.','claimed_obligation'],['We propose that board approval must be obtained.','proposal'],['Previously approval was mandatory.','historical'],['Suppose approval is mandatory.','hypothetical'],['Approval is required unless waived.','exception'],['The lender may permit an extension.','permission'],['The company shall not extend credit.','prohibition'],['Please review this requirement.','ambiguous']];
+for(const [phrase,expected] of samples)test(expected,()=>assert.equal(inspect(phrase).modality,expected));
+test('review remains mandatory',()=>assert.equal(inspect(samples[0][0]).status,'requires_independent_review'));
+test('expired flagged',()=>assert(inspect(samples[0][0],{effective_to:'2025-01-01'}).issues.includes('expired')));
+test('unknown source rejected',()=>assert.throws(()=>inspect(samples[0][0],{source_id:'wrong'})));
+test('alternative link remains unverified',()=>assert.equal(inspect(samples[0][0]).alternative_effects[0].classification,'possible_decision_effect_only'));
